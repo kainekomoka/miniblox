@@ -38,7 +38,7 @@
                 .then(res => res.text())
                 .then(code => {
                     const script = document.createElement("script");
-                    script.textContent = code + "\\n" + injectCode;
+                    script.textContent = code + "\n" + injectCode;
                     document.body.appendChild(script);
                 });
         }
