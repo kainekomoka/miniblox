@@ -3,31 +3,15 @@
 
     let killauraEnabled = false;
 
-    const injectCode = `
-        let killauraEnabled = false;
-
-        document.addEventListener("keydown", e => {
-            if (e.key.toLowerCase() === "v") {
-                const chatOpen = document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA";
-                if (!chatOpen) {
-                    killauraEnabled = !killauraEnabled;
-                    console.log("KillAura: " + (killauraEnabled ? "ON" : "OFF"));
-                }
+    document.addEventListener("keydown", e => {
+        if (e.key.toLowerCase() === "v") {
+            const chatOpen = document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA";
+            if (!chatOpen) {
+                killauraEnabled = !killauraEnabled;
+                console.log("KillAura: " + (killauraEnabled ? "ON" : "OFF"));
             }
-        });
-
-        const originalUpdate = Player.prototype.update;
-        Player.prototype.update = function () {
-            if (killauraEnabled && this.isLocalPlayer) {
-                const enemies = world.players.filter(p => p.team !== this.team && !p.isDead);
-                let target = enemies.find(p => this.getDistance(p) < 4);
-                if (target) {
-                    this.attack(target);
-                }
-            }
-            originalUpdate.call(this);
-        };
-    `;
+        }
+    });
 
     const observer = new MutationObserver(() => {
         const scripts = [...document.querySelectorAll("script")];
@@ -37,8 +21,21 @@
             fetch(targetScript.src)
                 .then(res => res.text())
                 .then(code => {
+                    const patch = `
+                        const originalUpdate = Player.prototype.update;
+                        Player.prototype.update = function () {
+                            if (killauraEnabled && this.isLocalPlayer) {
+                                const enemies = world.players.filter(p => p.team !== this.team && !p.isDead);
+                                let target = enemies.find(p => this.getDistance(p) < 4);
+                                if (target) {
+                                    this.attack(target);
+                                }
+                            }
+                            originalUpdate.call(this);
+                        };
+                    `;
                     const script = document.createElement("script");
-                    script.textContent = code + "\n" + injectCode;
+                    script.textContent = code + "\\n" + patch;
                     document.body.appendChild(script);
                 });
         }
@@ -46,3 +43,4 @@
 
     observer.observe(document, { childList: true, subtree: true });
 })();
+
